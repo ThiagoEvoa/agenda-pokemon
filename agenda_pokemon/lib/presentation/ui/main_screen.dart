@@ -1,5 +1,8 @@
 import 'package:agenda_pokemon/presentation/viewmodel/pokebook_viewmodel.dart';
-import 'package:agenda_pokemon/presentation/viewmodel/pokemon_viewmodel.dart';
+import 'package:agenda_pokemon/presentation/widget/item_pokemon_widget.dart';
+import 'package:agenda_pokemon/presentation/widget/loading_widget.dart';
+import 'package:agenda_pokemon/presentation/widget/message_widget.dart';
+import 'package:agenda_pokemon/util/constants.dart';
 import 'package:agenda_pokemon/util/string_util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -18,8 +21,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     _pokeBookViewModel = context.read<PokeBookViewModel>();
-    _pokeBookViewModel.retrievePokeBook(
-        url: 'https://pokeapi.co/api/v2/pokemon');
+    _pokeBookViewModel.retrievePokeBook(url: POKEMON_URL);
     super.initState();
   }
 
@@ -33,13 +35,9 @@ class _MainScreenState extends State<MainScreen> {
       body: Consumer<PokeBookViewModel>(
         builder: (context, pokebookViewModel, child) {
           if (pokebookViewModel.getMessage != null) {
-            return Center(
-              child: Text(pokebookViewModel.getMessage),
-            );
+            return MessageWidget(message: pokebookViewModel.getMessage);
           } else if (pokebookViewModel.getPokemons == null) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
+            return LoadingWidget();
           } else {
             return ListView.separated(
               controller: _scrollController,
@@ -47,48 +45,21 @@ class _MainScreenState extends State<MainScreen> {
               separatorBuilder: (context, index) => Divider(),
               itemBuilder: (context, index) {
                 if (index < pokebookViewModel.getPokemons.length) {
-                  return ListTile(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => DetailScreen(
-                            url: pokebookViewModel.getPokemons[index].url,
-                          ),
-                        ),
-                      );
-                    },
-                    leading: Container(
-                      child: Text('#$index'),
-                      alignment: Alignment.centerLeft,
-                      width: 60,
-                    ),
-                    title: Text(
-                      captilizeFirstLetter(
-                          word: pokebookViewModel.getPokemons[index].name),
-                      style: TextStyle(fontSize: 18),
-                    ),
+                  return ItemPokemonWidget(
+                    pokebookViewModel: pokebookViewModel,
+                    index: index,
                   );
                 } else if (pokebookViewModel.getHasMore) {
                   _pokeBookViewModel.retrievePokeBook(
                       url: pokebookViewModel.getPokeBookResoultsEntity.next);
                   return Padding(
                     padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: LoadingWidget(),
                   );
                 } else {
                   return Padding(
                     padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: Text(
-                        'Nothing more to load',
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red),
-                      ),
-                    ),
+                    child: MessageWidget(message: 'Nothing more to load'),
                   );
                 }
               },
